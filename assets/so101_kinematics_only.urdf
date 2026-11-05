@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- MODIFIED EXTRACT for OFFLINE tests, 2026-11-05.
+Source: TheRobotStudio/SO-ARM100/Simulation/SO101/so101_new_calib.urdf
+Git blob: 9552a231d8b23bed68ec15779eba620c5d875ec4; Apache-2.0.
+Original generated using onshape-to-robot.
+Original Onshape: https://cad.onshape.com/documents/7715cc284bb430fe6dab4ffd/w/4fd0791b683777b02f8d975a/e/826c553ede3b7592eb9ca800
+Changes: removed visuals, collision meshes, inertia, transmissions and materials.
+NOT a full collision or dynamic robot model. gripper_link origin is NOT a calibrated TCP.
+-->
+<robot name="so101_offline_kinematics_extract">
+<link name="base_link"/><link name="shoulder_link"/><link name="upper_arm_link"/>
+<link name="lower_arm_link"/><link name="wrist_link"/><link name="gripper_link"/>
+<link name="moving_jaw_so101_v1_link"/>
+<joint name="shoulder_pan" type="revolute"><origin xyz="0.0388353 -8.97657e-09 0.0624" rpy="3.14159 4.18253e-17 -3.14159"/><parent link="base_link"/><child link="shoulder_link"/><axis xyz="0 0 1"/><limit effort="10" velocity="10" lower="-1.91986" upper="1.91986"/></joint>
+<joint name="shoulder_lift" type="revolute"><origin xyz="-0.0303992 -0.0182778 -0.0542" rpy="-1.5708 -1.5708 0"/><parent link="shoulder_link"/><child link="upper_arm_link"/><axis xyz="0 0 1"/><limit effort="10" velocity="10" lower="-1.74533" upper="1.74533"/></joint>
+<joint name="elbow_flex" type="revolute"><origin xyz="-0.11257 -0.028 1.73763e-16" rpy="-3.63608e-16 8.74301e-16 1.5708"/><parent link="upper_arm_link"/><child link="lower_arm_link"/><axis xyz="0 0 1"/><limit effort="10" velocity="10" lower="-1.69" upper="1.69"/></joint>
+<joint name="wrist_flex" type="revolute"><origin xyz="-0.1349 0.0052 3.62355e-17" rpy="4.02456e-15 8.67362e-16 -1.5708"/><parent link="lower_arm_link"/><child link="wrist_link"/><axis xyz="0 0 1"/><limit effort="10" velocity="10" lower="-1.65806" upper="1.65806"/></joint>
+<joint name="wrist_roll" type="revolute"><origin xyz="5.55112e-17 -0.0611 0.0181" rpy="1.5708 0.0486795 3.14159"/><parent link="wrist_link"/><child link="gripper_link"/><axis xyz="0 0 1"/><limit effort="10" velocity="10" lower="-2.74385" upper="2.84121"/></joint>
+<joint name="gripper" type="revolute"><origin xyz="0.0202 0.0188 -0.0234" rpy="1.5708 -5.24284e-08 -1.41553e-15"/><parent link="gripper_link"/><child link="moving_jaw_so101_v1_link"/><axis xyz="0 0 1"/><limit effort="10" velocity="10" lower="-0.174533" upper="1.74533"/></joint>
+</robot>

@@ -1,0 +1,9 @@
+# Baseline versions match the existing successful detector environment.
+# RealSense installation and capture are still pending device validation.
+numpy==2.2.6
+scipy==1.15.3
+mediapipe==0.10.14
+opencv-contrib-python==4.11.0.86
+jax==0.4.30
+jaxlib==0.4.30
+pyrealsense2

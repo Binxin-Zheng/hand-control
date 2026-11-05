@@ -1,0 +1,71 @@
+{
+  "port": null,
+  "joints": {
+    "shoulder_pan": {
+      "id": 1,
+      "zero_raw": null,
+      "raw_per_unit": null,
+      "lower": null,
+      "upper": null,
+      "raw_min": null,
+      "raw_max": null
+    },
+    "shoulder_lift": {
+      "id": 2,
+      "zero_raw": null,
+      "raw_per_unit": null,
+      "lower": null,
+      "upper": null,
+      "raw_min": null,
+      "raw_max": null
+    },
+    "elbow_flex": {
+      "id": 3,
+      "zero_raw": null,
+      "raw_per_unit": null,
+      "lower": null,
+      "upper": null,
+      "raw_min": null,
+      "raw_max": null
+    },
+    "wrist_flex": {
+      "id": 4,
+      "zero_raw": null,
+      "raw_per_unit": null,
+      "lower": null,
+      "upper": null,
+      "raw_min": null,
+      "raw_max": null
+    },
+    "wrist_roll": {
+      "id": 5,
+      "zero_raw": null,
+      "raw_per_unit": null,
+      "lower": null,
+      "upper": null,
+      "raw_min": null,
+      "raw_max": null
+    },
+    "gripper": {
+      "id": 6,
+      "zero_raw": null,
+      "raw_per_unit": null,
+      "lower": 0,
+      "upper": 1,
+      "raw_min": null,
+      "raw_max": null
+    }
+  },
+  "acceptance": {
+    "signed_by": null,
+    "date": null,
+    "joint_calibration": false,
+    "tcp": false,
+    "collision_scene": false,
+    "command_watchdog": false,
+    "physical_estop": false,
+    "hold_stop": false,
+    "camera_geometry": false,
+    "serial_timeout": false
+  }
+}

@@ -1,0 +1,60 @@
+# Python environments and generated package files
+.venv*/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+/build/
+/dist/
+
+# Test, lint, and coverage caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Generated runs, recordings, traces, and dependency inventories.
+# Keep written validation reports trackable.
+/outputs/**
+!/outputs/**/
+!/outputs/**/*.md
+
+# Large input recordings; annotations and documentation remain trackable.
+/sample/**/*.mp4
+/sample/**/*.avi
+/sample/**/*.mov
+/sample/**/*.mkv
+/sample/**/*.bag
+/sample/**/*.npz
+
+# Reproducible upstream downloads (keep the bundled kinematics-only URDF).
+/assets/so101/
+/vendor/
+/vendor_audit/
+
+# Machine-specific robot/camera calibration and acceptance records.
+# Shared *.example.json and runtime.sim.json remain trackable.
+/config/*.local.json
+/config/*.local.yaml
+/config/*.local.yml
+
+# Local credentials and tool state
+.env
+.env.*
+!.env.example
+!.env.*.example
+/.aws/
+/.agents/
+/.codex/
+
+# Editor/OS temporary files
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+*.log

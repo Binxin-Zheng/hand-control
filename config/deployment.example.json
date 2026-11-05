@@ -1,0 +1,18 @@
+{
+  "hardware_authorized": false,
+  "camera_route": "rgbd_primary_recommended_not_hardware_validated",
+  "camera_frame": "camera_color_optical",
+  "R_base_camera": null,
+  "translation_scale": 1.0,
+  "robot_urdf": null,
+  "base_link": "base_link",
+  "tip_link": "gripper_link",
+  "tip_T_tcp": null,
+  "joint_names": ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"],
+  "driver_to_urdf_joint_calibration": null,
+  "gripper_angle_calibration": null,
+  "hand_closed_open_calibration_rad": null,
+  "collision_model": null,
+  "driver_watchdog_validated": false,
+  "notes": "Null required fields must block physical execution. This example is documentation, not a loaded runtime config."
+}

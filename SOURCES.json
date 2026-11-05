@@ -1,0 +1,46 @@
+{
+  "checked_on": "2026-11-05",
+  "paper_version": "2307.04577v3 (2024-05-16)",
+  "audited_files": [
+    {
+      "repo": "dexsuite/dex-retargeting",
+      "path": "example/vector_retargeting/single_hand_detector.py",
+      "git_blob_sha": "4867ad7d2e5ea3984002c1730b937d06b1fe97ee",
+      "finding": "wrist-centered local points and modeled wrist rotation; no global translation"
+    },
+    {
+      "repo": "dexsuite/dex-retargeting",
+      "path": "example/vector_retargeting/detect_from_video.py",
+      "git_blob_sha": "207bb2bbf911ba6f3dd85b10f1088d79e418b65f",
+      "finding": "hand retargeting and serialized joint positions, not complete arm control"
+    },
+    {
+      "repo": "TheRobotStudio/SO-ARM100",
+      "path": "Simulation/SO101/so101_new_calib.urdf",
+      "git_blob_sha": "9552a231d8b23bed68ec15779eba620c5d875ec4",
+      "finding": "official follower kinematics used for modified offline fixture"
+    },
+    {
+      "repo": "Dingry/BunnyVisionPro",
+      "path": "README.md",
+      "git_blob_sha": "e8de68975d053ce3df98c1291535ab605ffd30fa",
+      "finding": "real XArm7/Ability control examples; collision and singularity avoidance remain TODO in inspected README"
+    }
+  ],
+  "primary_urls": [
+    "https://yzqin.github.io/anyteleop/",
+    "https://arxiv.org/html/2307.04577v3",
+    "https://www.roboticsproceedings.org/rss19/p015.pdf",
+    "https://github.com/dexsuite/dex-retargeting/issues/62",
+    "https://github.com/dexsuite/dex-retargeting/issues/27",
+    "https://github.com/dexsuite/dex-retargeting/issues/73",
+    "https://nvlabs.github.io/curobo/latest/",
+    "https://nvlabs.github.io/curobo/latest/getting-started/reactive_control.html",
+    "https://nvlabs.github.io/curobo/latest/getting-started/build_robot_model.html",
+    "https://nvidia.github.io/IsaacCapture/main/references/retargeting/so101.html",
+    "https://dev.realsenseai.com/docs/projection-in-realsense-sdk-2-0/",
+    "https://docs.opencv.org/4.x/d5/d1f/calib3d_solvePnP.html",
+    "https://developers.google.com/mediapipe/solutions/vision/hand_landmarker/python"
+  ],
+  "notes": "Blob identifiers pin individual audited file bytes, not a whole repository dependency lock. No claim of camera/robot integration testing."
+}
