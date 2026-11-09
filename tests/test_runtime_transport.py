@@ -38,3 +38,43 @@ def test_file_ipc_is_latest_only_and_expires(tmp_path):
     assert receiver.poll() is None
     path.write_text('{invalid')
     assert receiver.poll() is None
+
+
+def test_file_receiver_distinguishes_missing_stale_future_and_protocol_errors(tmp_path):
+    from anyteleop_so101.runtime.transport import FileObservationReceiver, publish_file
+    path = tmp_path/'latest.json'; receiver = FileObservationReceiver(path)
+    assert receiver.poll() is None and receiver.error_kind == 'missing'
+    now = time.monotonic()
+    for timestamp, kind in ((now-1, 'stale'), (now+1, 'future')):
+        publish_file(path, {'schema': 'teleop.vision.v1', 'observation': obs(timestamp).as_dict()})
+        assert receiver.poll() is None
+        assert receiver.error == 'Stale/future vision input' and receiver.error_kind == kind
+    publish_file(path, {'schema': 'teleop.vision.v1', 'observation': obs(now, 2).as_dict()})
+    assert receiver.poll() is not None and receiver.error_kind is None
+    publish_file(path, {'schema': 'teleop.vision.v1', 'observation': obs(now-.01, 3).as_dict()})
+    assert receiver.poll() is None and receiver.error_kind == 'out_of_order'
+    for raw, kind in (('x'*65537, 'oversized'), ('{"schema":"wrong"}', 'schema'), ('{invalid', 'malformed')):
+        path.write_text(raw)
+        assert receiver.poll() is None and receiver.error_kind == kind
+
+
+def test_udp_receiver_error_kinds_without_opening_socket():
+    from collections import deque
+    pending = deque()
+    class FakeSocket:
+        def recv(self, size):
+            if pending:
+                return pending.popleft()
+            raise BlockingIOError
+    receiver = ObservationReceiver.__new__(ObservationReceiver)
+    receiver.socket = FakeSocket()
+    receiver.latest = receiver.error = receiver.error_kind = None
+    receiver.metadata = {}
+    now = time.monotonic()
+    for timestamp, kind in ((now-1, 'stale'), (now+1, 'future'), (now, None), (now-.01, 'out_of_order')):
+        pending.append(json.dumps({'schema': 'teleop.vision.v1', 'observation': obs(timestamp).as_dict()}).encode())
+        result = receiver.poll()
+        assert receiver.error_kind == kind
+        assert (result is not None) == (kind is None)
+    pending.append(b'{invalid')
+    assert receiver.poll() is None and receiver.error_kind == 'malformed'

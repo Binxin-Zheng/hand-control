@@ -63,9 +63,61 @@
     "tcp": false,
     "collision_scene": false,
     "command_watchdog": false,
-    "physical_estop": false,
+    "software_stop": false,
     "hold_stop": false,
     "camera_geometry": false,
     "serial_timeout": false
+  },
+  "expected_servo_calibration": {
+    "shoulder_pan": {
+      "id": 1,
+      "drive_mode": 0,
+      "homing_offset": null,
+      "range_min": null,
+      "range_max": null
+    },
+    "shoulder_lift": {
+      "id": 2,
+      "drive_mode": 0,
+      "homing_offset": null,
+      "range_min": null,
+      "range_max": null
+    },
+    "elbow_flex": {
+      "id": 3,
+      "drive_mode": 0,
+      "homing_offset": null,
+      "range_min": null,
+      "range_max": null
+    },
+    "wrist_flex": {
+      "id": 4,
+      "drive_mode": 0,
+      "homing_offset": null,
+      "range_min": null,
+      "range_max": null
+    },
+    "wrist_roll": {
+      "id": 5,
+      "drive_mode": 0,
+      "homing_offset": null,
+      "range_min": null,
+      "range_max": null
+    },
+    "gripper": {
+      "id": 6,
+      "drive_mode": 0,
+      "homing_offset": null,
+      "range_min": null,
+      "range_max": null
+    }
+  },
+  "gripper_model_calibration": {
+    "zero_raw": null,
+    "raw_per_rad": null,
+    "angle_range_rad": [
+      null,
+      null
+    ]
   }
 }

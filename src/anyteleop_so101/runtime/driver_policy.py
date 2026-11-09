@@ -53,6 +53,25 @@ class Calibration:
         return min(c['upper'], max(c['lower'], value))
 
 
+def gripper_angle_range(config):
+    """One physical aperture-to-URDF-angle calibration for driver and guard."""
+    model = config.get('gripper_model_calibration')
+    if not isinstance(model, dict) or set(model) != {'zero_raw', 'raw_per_rad', 'angle_range_rad'}:
+        raise ValueError('Explicit gripper_model_calibration is required for physical collision geometry')
+    limits = model['angle_range_rad']
+    if (not isinstance(limits, (list, tuple)) or len(limits) != 2
+            or not all(finite(x) for x in (*limits, model['zero_raw'], model['raw_per_rad']))
+            or limits[0] >= limits[1] or model['raw_per_rad'] == 0):
+        raise ValueError('Invalid physical gripper model calibration')
+    aperture = config['joints']['gripper']
+    for fraction, angle in zip((0, 1), limits):
+        model_raw = model['zero_raw'] + model['raw_per_rad']*angle
+        aperture_raw = aperture['zero_raw'] + aperture['raw_per_unit']*fraction
+        if not math.isclose(model_raw, aperture_raw, rel_tol=0, abs_tol=1e-6):
+            raise ValueError('Physical gripper aperture and URDF angle mappings disagree')
+    return tuple(limits)
+
+
 class CommandLease:
     def __init__(self, max_lease=.1, max_joint_step=.025, max_grip_step=.04):
         if not all(finite(x) and x > 0 for x in (max_lease, max_joint_step, max_grip_step)):

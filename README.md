@@ -77,3 +77,28 @@ Python 版本命令应替换为本机实际安装的 3.11+ 解释器。核心验
 已用未改动、Git blob 校验一致的上游 detector 完整处理 `sample/output.mp4`（326 帧），新增视频时间戳、21 点标注视频、显式 RGB-D 观测适配器及实拍安全回放。77 项测试及 1,200 周期合成确定性回放通过。完整结果、复现命令、环境和未完成项见 [实拍验证记录](outputs/video/VALIDATION.md)。
 
 查看 [右手标注视频](outputs/video/right.mp4)。全片保留无手空闲时间，检测计数不代表有手帧召回率。RGB 视频没有可直接使用的全局深度，因此安全回放不发运动命令。**尚未完成机械臂运动仿真或真机手控验收**；需要完整 follower meshes、有效全局腕部位置输入及硬件放行条件。
+
+## D455 first test
+
+For the current **XYZ-following experiment**, launch both the D455 and official
+SO101 simulator with one explicit command:
+
+```bash
+.venv-core/bin/python tools/hand_follow.py --record-images
+```
+
+This selects the current-depth `wrist_surface_fit` estimator, nearer-range
+640×360 depth with unchanged 640×480 color inference, and named `position`
+control mode. The visual preview follows automatically, freezes on missing
+tracking and re-anchors before resuming. **Space** pauses/resumes; **Q** quits.
+Use `--manual-control` for explicit E/R engagement and physical-recovery
+validation. Automatic preview is restricted to simulation. Every launch creates
+fresh camera/control logs under `outputs/hand-follow/`. See the research update in
+[01_RESEARCH](docs/01_RESEARCH.md) and the current procedure in
+[D455 quickstart](docs/09_D455_QUICKSTART.md).
+
+See [D455 recognition, metric XYZ preview, and hand-controlled simulation](docs/09_D455_QUICKSTART.md). The preview now includes aligned depth, wrist coordinates, depth-fusion status, capture age, and finger angle even before gripper calibration.
+
+For automatic single-joint following with no gesture calibration, a full original
+color-camera preview and the official SO101 gripper model, see
+[Gripper test and mirror-view controls](docs/11_GRIPPER_TEST.md).

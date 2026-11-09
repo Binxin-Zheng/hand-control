@@ -13,6 +13,7 @@ class ObservationReceiver:
         self.latest = None
         self.metadata = {}
         self.error = None
+        self.error_kind = None
 
     def poll(self):
         # Bound drain work so flooding cannot starve robot stop handling.
@@ -21,20 +22,29 @@ class ObservationReceiver:
                 raw = self.socket.recv(65536)
             except BlockingIOError:
                 break
+            error_kind = 'malformed'
             try:
                 packet = json.loads(raw)
                 if packet['schema'] != 'teleop.vision.v1':
+                    error_kind = 'schema'
                     raise ValueError('Wrong vision envelope')
                 obs = HandObservation.from_dict(packet['observation'])
                 now = time.monotonic()
-                if obs.timestamp_s > now + .005 or now - obs.timestamp_s > .15:
+                if obs.timestamp_s > now + .005:
+                    error_kind = 'future'
+                    raise ValueError('Stale/future vision input')
+                if now - obs.timestamp_s > .15:
+                    error_kind = 'stale'
                     raise ValueError('Stale/future vision input')
                 if self.latest is not None and obs.timestamp_s < self.latest.timestamp_s:
+                    error_kind = 'out_of_order'
                     raise ValueError('Out of order input')
                 self.latest, self.metadata, self.error = obs, packet, None
+                self.error_kind = None
             except (ValueError, KeyError, TypeError) as exc:
                 self.latest = None
                 self.error = str(exc)
+                self.error_kind = error_kind
         return self.latest
 
     def close(self):
@@ -49,24 +59,37 @@ class FileObservationReceiver:
         self.latest = None
         self.metadata = {}
         self.error = None
+        self.error_kind = None
 
     def poll(self):
+        error_kind = 'file_io'
         try:
             if self.path.stat().st_size > 65536:
+                error_kind = 'oversized'
                 raise ValueError('Vision packet too large')
-            packet = json.loads(self.path.read_bytes())
+            raw = self.path.read_bytes()
+            error_kind = 'malformed'
+            packet = json.loads(raw)
             if packet['schema'] != 'teleop.vision.v1':
+                error_kind = 'schema'
                 raise ValueError('Wrong vision envelope')
             obs = HandObservation.from_dict(packet['observation'])
             now = time.monotonic()
-            if obs.timestamp_s > now+.005 or now-obs.timestamp_s > .15:
+            if obs.timestamp_s > now+.005:
+                error_kind = 'future'
+                raise ValueError('Stale/future vision input')
+            if now-obs.timestamp_s > .15:
+                error_kind = 'stale'
                 raise ValueError('Stale/future vision input')
             if self.latest is not None and obs.timestamp_s < self.latest.timestamp_s:
+                error_kind = 'out_of_order'
                 raise ValueError('Out of order input')
             self.latest, self.metadata, self.error = obs, packet, None
+            self.error_kind = None
         except (OSError, ValueError, KeyError, TypeError) as exc:
             self.latest = None
             self.error = str(exc)
+            self.error_kind = 'missing' if isinstance(exc, FileNotFoundError) else error_kind
         return self.latest
 
     def close(self):

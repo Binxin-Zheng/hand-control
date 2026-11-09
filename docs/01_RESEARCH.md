@@ -62,7 +62,113 @@ NVIDIA 的 SO101 retargeter 文档描述了 full-pose clutch、按下时重设�
 
 换成 AnyTeleop 架构不自动解决识别率。其公开示例本身仍使用 MediaPipe。应以同一批完整原始视频做 A/B：上游识别率、适配后的识别率、有效空间定位率、控制暂停原因分别统计。没有旧代码和录像时，不应直接断定旧项目到底错在模型、相机角度还是控制映射。
 
-## 来源
+## 2026-11-06 · D455 global-position implementation research
+
+The user clarified the first required outcome: continuous arm following in the
+intended direction; high metric precision is a subsequent improvement. Position
+availability, correct-direction motion and precision must be measured separately.
+The existing base-fixed relative mapper and position-priority IK already provide
+the control structure. Constant position bias cancels at engagement, but
+rotation-dependent bias and missing observations do not.
+
+Sources and actual open-source code inspected:
+
+- AnyTeleop §IV-A/B separates wrist-relative geometry from global wrist pose;
+  RGB-only adds a scale estimator and RGB-D adds measured depth. Its public
+  detector blob remains `4867ad7d2e5ea3984002c1730b937d06b1fe97ee`.
+- [OAT accepted paper](https://eprints.whiterose.ac.uk/id/eprint/238695/1/ICRA26_0903_FI.pdf)
+  estimates translation by matching projected model joints to image landmarks.
+  The paper's real-detector results are centimetre-scale, and its ground-truth
+  rows are not camera-accuracy evidence. No linked implementation was located
+  in its paper/university record, despite its open-source description.
+- [DexPilot](https://arxiv.org/html/1910.03135) fits an articulated surface using
+  DART, supported by learned priors and multiple depth cameras. The inspected
+  [DART kernel](https://github.com/tschmidt23/dart/blob/37adc66580a15c5b438986d77621ebd8f5f450c3/src/optimization/kernels/obsToMod.cu)
+  associates observed depth vertices with model surfaces using robust losses.
+  This is a relevant geometric precedent, not a tested modern D455 dependency.
+- [DepthAI hand tracker](https://github.com/geaxgx/depthai_hand_tracker/blob/97731232fffd467e8de2c3a34ab8382962bb385e/HandTracker.py)
+  obtains global XYZ from an adaptive wrist depth ROI, separately from local
+  world landmarks. It requires OAK-specific APIs, so its architecture was
+  studied without replacing the current detector or installing its stack.
+- [Sridhar et al., ICCV 2013](https://www.cv-foundation.org/openaccess/content_iccv_2013/papers/Sridhar_Interactive_Markerless_Articulated_2013_ICCV_paper.pdf)
+  uses robust palm-plane fitting as part of a larger calibrated tracking system.
+  A surface fit requires adequate coverage, visibility and conditioning.
+- [RealSense D400 datasheet](https://realsenseai.com/wp-content/uploads/2024/10/Intel-RealSense-D400-Series-Datasheet-October-2024.pdf)
+  lists nominal D455 minimum depth of 320 mm at 640×480 and 260 mm at 640×360.
+  The saved recording operates near that boundary. Nearer-range mode is a
+  sensor-profile experiment, not proof that all missing depth will recover.
+
+Independent full-recording reprojection comparisons retained all 900 attempts
+and all 802 selected-hand detections. Translation-only fitting gave median/P95
+reprojection RMS 38.8/58.2 px; SQPnP plus refinement gave 30.7/50.9 px. Numerical
+convergence sometimes produced impossible/extreme depths. An exact-projection
+synthetic case verified the translation solver algebra, so the observed mismatch
+cannot be dismissed as a demonstrated solver-algebra error. These results do
+not support filling missing depth with that monocular model on this recording.
+Artifacts and pinned code details are in `outputs/position-research/`.
+
+Dense whole-palm prototypes also failed to improve availability. The selected
+implementation instead fits current local wrist-surface depth with explicit
+association, local support, foreground-consistency and conditioning checks.
+The control anchor remains the landmark-0 image ray, never the moving centroid
+of available depth. Skin/landmark bias remains a limitation. Independent review
+found a background-ring counterexample; acceptance now requires local depth
+evidence agreeing with the fitted surface, not convex-hull containment alone.
+
+The saved model orientations also contain abrupt changes. The implementation
+therefore exposes a named `position` mode for the user's XYZ milestone, while
+leaving `full_pose` behavior and its default unchanged. This is not an automatic
+fallback, a threshold reduction, or an orientation offset applied after latching.
+All position/identity/timing/collision/stop rules remain active.
+
+The research does not establish physical following, absolute precision, or
+reliability in every required pose. Full live D455 hand-motion and physical-arm
+tests are still required; successful startup or synthetic geometry is not a
+substitute.
+
+## Recorded follow-up: semantic wrist errors and depth holes are separate
+
+The complete first live recording now has an exact upstream raw-result replay,
+Pose association analysis, instrumented Holistic comparison and unchanged-depth
+A/B. All 2,857 attempts remain accounted for. The original 2,849 readable-frame
+selected probes reproduce exactly; the terminal corrupt archive is retained
+as unavailable rather than discarded.
+
+Body context distinguishes the target-hand handedness flip from the distractor
+hand occupying the original single-hand tracker. The installed Holistic graph
+can expose all 21 local world points, but both internal hand-presence gates must
+be explicitly set to 0.8: the public confidence arguments configure pose, not
+those hand gates. The stock pose-derived hand crop loses many original hand
+detections. This is consistent with the ROI failure described by
+[Moryosseff, 2024](https://arxiv.org/html/2405.03545v2), whose crop-quality results
+do not establish metric hand-position accuracy or a ready-made live fix.
+
+With the unchanged depth estimator, readable-frame global positions were 1,906
+for the baseline and 1,920 for Holistic (28 gains, 14 losses). A named offline
+baseline-first hybrid produced 1,929, but recovered only four isolated depth
+positions in the 34-frame natural palm-down interval. Its longest unavailable
+span did not improve, and switching references at frame 2555 creates a 156 mm
+step exceeding the existing motion guard. Neither experiment is promoted to
+runtime. Full reports: `outputs/position-research/live-01-holistic.report.md`
+and `live-01-hybrid.report.md`.
+
+A separate image audit found the original wrist landmark on the proximal
+forearm during phone handling, while the body-guided estimate stays near the
+visible wrist. Both depth fits are supported by real current surfaces, yet the
+two XYZ estimates differ by up to 179 mm. This is an estimator disagreement,
+not an independently measured anatomical error. It demonstrates why a valid
+surface fit cannot establish that the selected pixel is actually the wrist.
+See `outputs/position-research/live-01-holistic.reference-difference.jpg`.
+Future body/hand consistency work must preserve a stable physical reference;
+blindly switching estimators can itself move the target.
+
+The next live sensor comparison retains the original 640×480 color inference
+while testing explicitly selected nearer-range depth profiles and recording
+native depth/IR. Those profiles are prepared, not hardware-validated. Better
+depth availability and correct wrist localization must both be demonstrated;
+neither can be inferred from the other's confidence or availability count.
+
+## Original sources
 
 - [S1] 官方项目页：https://yzqin.github.io/anyteleop/
 - [S2] 论文 v3：https://arxiv.org/html/2307.04577v3；RSS PDF：https://www.roboticsproceedings.org/rss19/p015.pdf

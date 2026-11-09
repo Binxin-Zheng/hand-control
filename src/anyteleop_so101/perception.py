@@ -33,7 +33,7 @@ class RectifiedIntrinsics:
 
 
 def depth_patch_median(depth_m, uv, visible_hand_mask, radius=2, min_fraction=.8,
-                       max_spread_m=.015):
+                       max_spread_m=.015, diagnostics=None):
     """Reject borders, holes and mixed-depth patches. Caller supplies a visibility mask.
     Image must be in meters, registered to the SAME pixel grid as uv. This is not
     a substitute for camera-driver alignment or anatomical occlusion reasoning.
@@ -46,18 +46,29 @@ def depth_patch_median(depth_m, uv, visible_hand_mask, radius=2, min_fraction=.8
     uv = finite_array(uv, (2,), "pixel")
     h,w = d.shape
     if not (0 <= uv[0] < w and 0 <= uv[1] < h):
+        if diagnostics is not None: diagnostics['reason']='outside_image'
         return None
     x,y = np.rint(uv).astype(int)
     if x-radius < 0 or y-radius < 0 or x+radius >= w or y+radius >= h:
+        if diagnostics is not None: diagnostics['reason']='image_border'
         return None
     patch=d[y-radius:y+radius+1,x-radius:x+radius+1]
     m=mask[y-radius:y+radius+1,x-radius:x+radius+1]
     valid=m & np.isfinite(patch) & (patch>0)
+    if diagnostics is not None:
+        diagnostics.update(depth_fraction=float((np.isfinite(patch)&(patch>0)).mean()),
+                           mask_fraction=float(m.mean()), valid_fraction=float(valid.mean()))
     if valid.mean() < min_fraction:
+        if diagnostics is not None:
+            diagnostics['reason']='depth_holes' if diagnostics['depth_fraction'] < min_fraction else 'surface_mask_support'
         return None
     values=patch[valid]
-    if np.quantile(values,.9)-np.quantile(values,.1) > max_spread_m:
+    spread=float(np.quantile(values,.9)-np.quantile(values,.1))
+    if diagnostics is not None: diagnostics['spread_m']=spread
+    if spread > max_spread_m:
+        if diagnostics is not None: diagnostics['reason']='mixed_depth_patch'
         return None
+    if diagnostics is not None: diagnostics['reason']='valid'
     return float(np.median(values))
 
 

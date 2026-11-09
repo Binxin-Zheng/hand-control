@@ -1,7 +1,7 @@
 {
   "urdf": "assets/so101/so101_new_calib.urdf",
   "camera_frame": "camera_color_optical",
-  "R_base_camera": [[0, 0, 1], [-1, 0, 0], [0, -1, 0]],
+  "R_base_camera": [[0, 0, -1], [1, 0, 0], [0, -1, 0]],
   "translation_scale": 0.5,
   "tcp": null,
   "collision": {"table_z": -0.02, "clearance": 0.005, "sweep_step": 0.01, "reach_bound": 1.0},

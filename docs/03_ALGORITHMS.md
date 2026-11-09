@@ -46,6 +46,48 @@
 
 ## 3. 手腕 → 末端增量映射
 
+### 2026-11-06: explicit `wrist_surface_fit` alternative
+
+The new alternative estimates a **visible wrist surface**, not an anatomical
+joint. It preserves the original detector, all 21 points, RGB preprocessing and
+both earlier estimators. Landmark 0 supplies a fixed image ray. Bounded local
+neighborhoods around that ray supply current-frame depth patches. Patch support
+still requires 80% valid samples and a 15 mm depth spread limit. Depth-connected
+components separate nearby background; robust surface fitting uses the existing
+12 mm residual limit, at least six patches and 3 mm two-dimensional spatial
+coverage. The ray must be locally supported after rejection, not merely inside
+the convex hull of distant background. Current near-ray depth must agree with
+the fitted surface. Excessive holes, conflicting surfaces and grazing views
+produce unavailable position; no previous depth is substituted.
+
+For a surface `n·p=d` and SDK-deprojected wrist ray `r`, the reference is
+`p=r*d/(n·r)`. The current SDK intrinsics/distortion are retained. Output records
+the method version, `wrist_surface_ray` reference, patches, residuals and current
+depth provenance. The geometric wrist ROI is explicitly an association
+assumption, not a segmentation or anatomical-visibility claim. The separate
+support mask is honored; an empty mask cannot establish observed hand position.
+The local demo rejects depth outside 0.05–2 m, including implausible saturated
+depth, without clipping values or removing frames from evaluation.
+
+This construction avoids subtracting model bone positions from skin points.
+It still depends on the 2D wrist estimate and can have rotation-dependent skin
+bias. Small fitting residuals do not establish anatomical or millimetre accuracy.
+The original `model_translation` remains the low-level worker default. The
+explicit `tools/hand_follow.py` experiment selects the new estimator and the
+D455 640×360 depth mode while retaining 640×480 color input.
+
+### Explicit XYZ control mode
+
+`TeleopSession(control_mode='position')` / `--control-mode position` follows
+the same base-fixed position deltas and uses the measured robot orientation at
+engagement as the secondary IK target. Five-joint hardware cannot guarantee
+exact orientation holding. Both anchors are renewed from measured state on
+re-engagement. This named mode does not use model orientation evidence or its
+angular-jump gate; position evidence, position-jump, age, identity, backlog,
+collision, stop and release/re-engage rules remain in force. `full_pose` remains
+the default and retains its original orientation requirements. There is no
+automatic switch between these modes.
+
 接管瞬间：人手 `(p_H0, R_H0)`，实测机器人末端 `(p_G0, R_G0)`。固定坐标旋转为 `C=R_B_C`，平移倍率 `s`。
 
 `p_G_des = p_G0 + s*C@(p_H - p_H0)`

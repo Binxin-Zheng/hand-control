@@ -101,3 +101,24 @@ def test_hardware_stop_holds_current_arm_and_never_opens_gripper():
             assert values=={n:2048 for n in ARM_NAMES}
     port.bus=Bus(); port.stop()
     with pytest.raises(ValueError): module.validate_acceptance({'joints':calibration()})
+
+
+def test_lab_demo_accepts_software_stop_without_physical_estop():
+    path=Path(__file__).parents[1]/'tools/robot_worker.py'
+    spec=importlib.util.spec_from_file_location('worker_demo_policy',path)
+    module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+    acceptance=dict(joint_calibration=True,
+                    tcp=True, collision_scene=True, command_watchdog=True,
+                    software_stop=True, hold_stop=True, camera_geometry=True,
+                    serial_timeout=True)
+    joints=calibration()
+    expected={name:dict(id=item['id'],drive_mode=0,homing_offset=0,
+                        range_min=item['raw_min'],range_max=item['raw_max'])
+              for name,item in joints.items()}
+    config=dict(port='/dev/test_not_opened', joints=joints, acceptance=acceptance,
+                expected_servo_calibration=expected,
+                gripper_model_calibration=dict(zero_raw=1000,raw_per_rad=500,angle_range_rad=[0,1]))
+    module.validate_acceptance(config)  # Validation only; never opens a port.
+    acceptance['software_stop']=False
+    acceptance['physical_estop']=True
+    with pytest.raises(ValueError): module.validate_acceptance(config)

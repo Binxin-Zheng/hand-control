@@ -29,7 +29,10 @@ class Decision:
 class TeleopSession:
     def __init__(self,servo:PositionPriorityServo,mapper:RelativeMapper,
                  camera_frame='camera_color_optical',max_age_s=.15,max_backlog_m=.06,
-                 allow_synthetic=False):
+                 allow_synthetic=False, control_mode='full_pose'):
+        if control_mode not in ('full_pose', 'position'):
+            raise ValueError('Choose explicit full_pose or position control mode')
+        self.control_mode=control_mode
         self.servo=servo; self.mapper=mapper; self.camera_frame=camera_frame
         self.max_age=max_age_s; self.max_backlog=max_backlog_m; self.allow_synthetic=allow_synthetic
         if not np.isfinite([max_age_s,max_backlog_m]).all() or min(max_age_s,max_backlog_m)<=0: raise ValueError('Invalid policy')
@@ -71,7 +74,7 @@ class TeleopSession:
             return self._stop('PAUSED','stale_or_future_observation')
         good_p={'rgbd_fused','stereo'}; good_r={'rgb_model','rgbd_fit','stereo'}
         if self.allow_synthetic: good_p.add('synthetic'); good_r.add('synthetic')
-        if obs.position_evidence not in good_p or obs.orientation_evidence not in good_r:
+        if obs.position_evidence not in good_p or (self.control_mode=='full_pose' and obs.orientation_evidence not in good_r):
             return self._stop('PAUSED','unsupported_pose_evidence')
         if self.last_obs is not None:
             prev=self.last_obs
@@ -85,7 +88,7 @@ class TeleopSession:
                 if elapsed<=0: return self._stop('PAUSED','nonincreasing_capture_time')
                 dp=np.linalg.norm(obs.pose.p-prev.pose.p)
                 dr=np.linalg.norm(rotation_error(obs.pose.R,prev.pose.R))
-                if dp>.015+1.5*elapsed or dr>.12+8*elapsed:
+                if dp>.015+1.5*elapsed or (self.control_mode=='full_pose' and dr>.12+8*elapsed):
                     return self._stop('PAUSED','implausible_pose_jump')
         self.last_obs=obs
         actual=self.servo.chain.fk(q)
@@ -94,8 +97,13 @@ class TeleopSession:
                 return self._stop('PAUSED','outside_soft_limits_at_engage')
             self.mapper.engage(obs.pose,actual); self.gripper.engage(robot.aperture)
             self.track=obs.track_id; self.state='ACTIVE'; self.velocity[:]=0
-            return Decision('ACTIVE','engaged_no_jump',q.copy(),robot.aperture,actual,{'gripper_pickup':False})
+            return Decision('ACTIVE','engaged_no_jump',q.copy(),robot.aperture,actual,
+                            {'gripper_pickup':False,'control_mode':self.control_mode})
         target=self.mapper.target(obs.pose)
+        if self.control_mode=='position':
+            # Named XYZ mode holds the measured orientation latched at engagement.
+            # It never changes full-pose behavior or integrates an orientation bias.
+            target=Pose(target.p,self.mapper.robot0.R)
         if np.linalg.norm(target.p-actual.p)>self.max_backlog:
             return self._stop('PAUSED','target_backlog_requires_reengage')
         try: step=self.servo.step(q,target,dt,self.velocity)
@@ -106,5 +114,6 @@ class TeleopSession:
         return Decision('ACTIVE','tracking',step.q_next,jaw,target,
             {'position_error_m':step.position_error_m,'orientation_error_rad':step.orientation_error_rad,
              'primary_leak_m_s':step.primary_leak_m_s,'sigma_min':step.sigma_min,
+             'control_mode':self.control_mode,
              'gripper_pickup':self.gripper.picked_up,'secondary_success':step.secondary_success,
              'collision_checked':False,'hardware_authorized':False})
